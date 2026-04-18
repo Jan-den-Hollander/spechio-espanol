@@ -18,7 +18,7 @@ interface Message {
 }
 
 const SYSTEM_PROMPT = `Sei Carmen, una simpatica partner di conversazione in spagnolo — come uno specchio magico che parla.
-REGOLE: UNA frase breve in spagnolo per turno (max 12 parole). Termina sempre con una domanda. Usa spagnolo naturale e moderno. Parla in modo caldo e incoraggiante. Correggi gli errori gentilmente con ✏️
+REGOLE: UNA frase breve in spagnolo per turno (max 12 parole). Termina sempre con una domanda. Usa spagnolo naturale e moderno. Parla in modo caldo e incoraggiante. Correggi gli errori gentilmente con un simbolo di matita.
 Rispondi SOLO con JSON valido, senza spiegazioni o Markdown: {"es":"frase in spagnolo","it":"traduzione italiana"}`;
 
 export default function App() {
@@ -32,7 +32,7 @@ export default function App() {
   const [status, setStatus] = useState('Pronto · Listo');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showKeyModal, setShowKeyModal] = useState(false);
-  const [customKey, setCustomKey] = useState(localStorage.getItem('specchio_spagnolo_api_key') || '');
+  const [customKey, setCustomKey] = useState(localStorage.getItem('specchio_espanol_api_key') || '');
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -52,10 +52,10 @@ export default function App() {
   const getAI = () => new GoogleGenAI({ apiKey: customKey || process.env.GEMINI_API_KEY || "" });
 
   const saveCustomKey = (key: string) => {
-    localStorage.setItem('specchio_spagnolo_api_key', key);
+    localStorage.setItem('specchio_espanol_api_key', key);
     setCustomKey(key);
     setShowKeyModal(false);
-    setStatus('Chiave API salvata! · ¡Guardado!');
+    setStatus('Chiave API salvata! - Guardado!');
   };
 
   const prevMessagesLength = useRef(0);
@@ -92,7 +92,7 @@ export default function App() {
         }
         streamRef.current = stream;
         setIsCamOn(true);
-        setStatus('Specchio attivo! ✨ · ¡Espejo activo!');
+        setStatus('Specchio attivo! ✨ · Espejo activo!');
       } catch {
         setStatus('Accesso fotocamera negato · Acceso denegado');
         setIsCamOn(false);
@@ -178,8 +178,8 @@ export default function App() {
   };
 
   const calculateSimilarity = (s1: string, s2: string) => {
-    const a = s1.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()¿¡]/g, "");
-    const b = s2.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()¿¡]/g, "");
+    const a = s1.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
+    const b = s2.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
     if (a === b) return 1;
     if (a.includes(b) || b.includes(a)) return 0.8;
     return 0.5;
@@ -215,7 +215,7 @@ export default function App() {
       });
       const response = await Promise.race([responsePromise, timeoutPromise]);
       const data = JSON.parse(response.text || "{}");
-      const aiMsg: Message = { role: 'model', es: data.es || "¡Hola! ¿Cómo estás?", it: data.it || "Ciao! Come stai?" };
+      const aiMsg: Message = { role: 'model', es: data.es || "Hola! Como estas?", it: data.it || "Ciao! Come stai?" };
       setMessages(prev => [...prev, aiMsg]);
       setIsThinking(false);
       speakIt(aiMsg.es);
@@ -257,15 +257,15 @@ export default function App() {
         <header className="text-center pb-4">
           <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
             className="font-serif text-3xl font-light tracking-widest text-[#e87a6a] drop-shadow-[0_0_20px_rgba(192,57,43,0.4)]">
-            Specchio Español
+            Specchio Espanol
           </motion.h1>
           <a href="#guida"
             className="text-[0.55rem] tracking-[0.15em] uppercase opacity-40 hover:opacity-80 transition-opacity mt-1 block"
             style={{ color: 'inherit' }}>
-            Come iniziare · Cómo empezar · How to start ↓
+            Come iniziare · Como empezar · How to start
           </a>
           <p className="text-[0.6rem] tracking-[0.2em] uppercase text-[#c0392b]/50 mt-1">
-            Carmen · Madrid · Español
+            Carmen · Madrid · Espanol
           </p>
         </header>
 
@@ -315,7 +315,7 @@ export default function App() {
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
               className="flex flex-col items-center gap-1 ml-5 select-none">
               <span className="text-4xl drop-shadow-lg">🇪🇸</span>
-              <span className="text-[0.5rem] tracking-widest uppercase text-[#c0392b]/40">Español</span>
+              <span className="text-[0.5rem] tracking-widest uppercase text-[#c0392b]/40">Espanol</span>
             </motion.div>
           )}
         </div>
@@ -378,7 +378,6 @@ export default function App() {
           <p className="text-[0.65rem] text-[#e87a6a]/60 min-h-[1em] italic font-medium">{status}</p>
         </div>
 
-        {/* ✅ scrollbar-thin verwijderd — vervangen door overflow-y-auto */}
         <div className="w-full h-[35vh] min-h-[250px] bg-black/30 border border-[#c0392b]/10 rounded-xl overflow-y-auto p-3 space-y-3 mb-4">
           {messages.map((msg, i) => {
             if (msg.role === 'error') {
@@ -386,14 +385,14 @@ export default function App() {
                 <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   className="flex flex-col items-start">
                   <div className="w-full px-3 py-3 rounded-xl rounded-bl-none text-[0.72rem] leading-relaxed bg-amber-900/20 border border-amber-500/30 space-y-2">
-                    <p className="text-amber-300 font-semibold text-[0.75rem]">⚠️ El espejo está momentáneamente saturado</p>
-                    <p className="text-amber-200/70">🕐 El servidor gratuito está más ocupado durante el día y a última hora de la noche (cuando los gamers americanos están en línea). Los mejores momentos para practicar: temprano por la mañana o entre las 13:00 y las 15:00.</p>
-                    <p className="text-amber-200/70">🎤 ¡No hay problema! Pulsa el micrófono para leer una frase en voz alta y el altavoz 🔊 para escucharla. ¡Puedes practicar igual mientras esperas!</p>
-                    <p className="text-amber-200/50 text-[0.65rem] italic">🇮🇹 Nessun problema! Clicca sul microfono per leggere una frase e sull'altoparlante per riascoltarla. Puoi esercitarti lo stesso!</p>
+                    <p className="text-amber-300 font-semibold text-[0.75rem]">El espejo esta momentaneamente saturado</p>
+                    <p className="text-amber-200/70">El servidor gratuito esta mas ocupado durante el dia y a ultima hora de la noche. Los mejores momentos para practicar: temprano por la manana o entre las 13:00 y las 15:00.</p>
+                    <p className="text-amber-200/70">Pulsa el microfono para leer una frase en voz alta y el altavoz para escucharla. Puedes practicar igual mientras esperas!</p>
+                    <p className="text-amber-200/50 text-[0.65rem] italic">Nessun problema! Clicca sul microfono per leggere una frase e sull'altoparlante per riascoltarla. Puoi esercitarti lo stesso!</p>
                     <button type="button"
                       onClick={() => { setMessages(prev => prev.filter((_, idx) => idx !== i)); generateAIResponse(messages.filter(m => m.role !== 'error')); }}
                       className="mt-1 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[0.6rem] uppercase tracking-widest hover:bg-amber-500/30 transition-colors">
-                      ↻ Intentar de nuevo · Riprova
+                      Intentar de nuevo - Riprova
                     </button>
                   </div>
                 </motion.div>
@@ -413,7 +412,7 @@ export default function App() {
                       <span>{msg.es}</span>
                       {msg.score !== undefined && (
                         <div className={`mt-1.5 text-[0.55rem] font-bold uppercase px-1.5 py-0.5 rounded-sm inline-block ${msg.score === 2 ? 'bg-green-500/10 text-green-400' : msg.score === 1 ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400'}`}>
-                          {msg.score === 2 ? '✓ ¡Muy bien!' : msg.score === 1 ? '~ ¡Casi!' : '↻ Inténtalo de nuevo'}
+                          {msg.score === 2 ? 'Muy bien!' : msg.score === 1 ? 'Casi!' : 'Intentalo de nuevo'}
                         </div>
                       )}
                     </>
@@ -434,13 +433,13 @@ export default function App() {
 
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between border-b border-[#c0392b]/10 pb-3">
-            <div className="flex items-center gap-1.5 text-[#c0392b]/60 text-[0.6rem] uppercase tracking-widest"><Trophy size={12} /> Punteggio · Puntuación</div>
+            <div className="flex items-center gap-1.5 text-[#c0392b]/60 text-[0.6rem] uppercase tracking-widest"><Trophy size={12} /> Punteggio · Puntuacion</div>
             <div className="text-[#e87a6a] font-bold text-lg">⭐ {score}</div>
           </div>
           <button type="button" onClick={startNewConversation}
             className="w-full py-3 border border-[#c0392b]/30 bg-[#c0392b]/5 rounded-xl text-[0.7rem] tracking-[0.2em] uppercase text-[#e87a6a] hover:bg-[#c0392b]/10 flex flex-col items-center justify-center gap-1">
             <div className="flex items-center gap-2"><RotateCcw size={14} /> Nuova Conversazione</div>
-            <span className="text-[0.55rem] opacity-60">Nueva conversación</span>
+            <span className="text-[0.55rem] opacity-60">Nueva conversacion</span>
           </button>
           <div className="flex gap-2">
             <button type="button" onClick={downloadTranscript}
@@ -462,7 +461,7 @@ export default function App() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-[#1a0808] border border-[#c0392b]/30 p-6 rounded-2xl w-full max-w-xs shadow-2xl">
               <h2 className="font-serif text-xl text-[#e87a6a] mb-1 text-center">Gemini API Key</h2>
-              <p className="text-[0.6rem] text-[#c0392b]/60 text-center mb-3">Chiave separata per app · Clave separada por app</p>
+              <p className="text-[0.6rem] text-[#c0392b]/60 text-center mb-3">Chiave separata per app - Clave separada por app</p>
               <input type="password" defaultValue={customKey} id="keyInput" className="w-full bg-black/40 border border-[#c0392b]/20 rounded-lg px-4 py-2.5 text-sm mb-4 outline-none text-white" />
               <div className="flex gap-2">
                 <button onClick={() => setShowKeyModal(false)} className="flex-1 py-2 text-xs text-[#c0392b]/50 border border-transparent rounded-lg">Annulla</button>
@@ -475,9 +474,7 @@ export default function App() {
       </AnimatePresence>
 
       <div style={{ textAlign: 'center', padding: '1.5rem 1rem 2rem', fontSize: '0.72rem', lineHeight: 1.8, color: 'white', opacity: 0.85 }}>
-        🇮🇹 Questa app è gratuita. Se la usi spesso, ti consigliamo di creare la tua chiave API personale — è facile e gratuita su aistudio.google.com.<br /><br />
-        🇳🇱 Deze app is gratis. Gebruik je hem regelmatig, maak dan je eigen API-sleutel aan — eenvoudig en gratis via aistudio.google.com.<br /><br />
-        🇬🇧 This app is free to use. If you use it regularly, we recommend creating your own API key — quick and free at aistudio.google.com.
+        Questa app e gratuita. Se la usi spesso, ti consigliamo di creare la tua chiave API personale — e facile e gratuita su aistudio.google.com.
       </div>
     </div>
   );
