@@ -2,7 +2,6 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import { GuidaSection } from './GuidaInstructions';
 import { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, Modality } from "@google/genai";
 import { Mic, MicOff, Volume2, Sparkles, Camera, CameraOff, ChevronRight, RotateCcw, Settings, MessageSquare, Trophy, Save, Key } from 'lucide-react';
@@ -18,7 +17,6 @@ interface Message {
   heard?: string;
 }
 
-// ✅ Prompt als constante ZONDER ${level} en ${topic} — die komen in generateAIResponse
 const SYSTEM_PROMPT = `Sei Carmen, una simpatica partner di conversazione in spagnolo — come uno specchio magico che parla.
 REGOLE: UNA frase breve in spagnolo per turno (max 12 parole). Termina sempre con una domanda. Usa spagnolo naturale e moderno. Parla in modo caldo e incoraggiante. Correggi gli errori gentilmente con ✏️
 Rispondi SOLO con JSON valido, senza spiegazioni o Markdown: {"es":"frase in spagnolo","it":"traduzione italiana"}`;
@@ -113,11 +111,7 @@ export default function App() {
         contents: [{ parts: [{ text }] }],
         config: {
           responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: "Aoede" }
-            }
-          }
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } } }
         },
       });
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
@@ -191,7 +185,6 @@ export default function App() {
     return 0.5;
   };
 
-  // ✅ Zelfde patroon als Nederlands: SYSTEM_PROMPT + niveau/onderwerp in generateAIResponse
   const generateAIResponse = async (history: Message[], retryCount = 0) => {
     setIsThinking(true);
     setStatus(retryCount > 0
@@ -205,18 +198,14 @@ export default function App() {
       .filter(m => m.role !== 'error')
       .map(m => ({
         role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.role === 'user'
-          ? m.es
-          : JSON.stringify({ es: m.es, it: m.it }) }]
+        parts: [{ text: m.role === 'user' ? m.es : JSON.stringify({ es: m.es, it: m.it }) }]
       }));
 
     try {
       const aiInstance = getAI();
-
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('TIMEOUT')), 12000)
       );
-
       const responsePromise = aiInstance.models.generateContent({
         model: retryCount > 0 ? "gemini-2.0-flash" : "gemini-2.5-flash",
         contents: contents.length > 0
@@ -224,18 +213,12 @@ export default function App() {
           : [{ role: 'user', parts: [{ text: 'Inizia la conversazione con un saluto caloroso in spagnolo e una domanda.' }] }],
         config: { systemInstruction: systemPrompt, responseMimeType: "application/json" },
       });
-
       const response = await Promise.race([responsePromise, timeoutPromise]);
       const data = JSON.parse(response.text || "{}");
-      const aiMsg: Message = {
-        role: 'model',
-        es: data.es || "¡Hola! ¿Cómo estás?",
-        it: data.it || "Ciao! Come stai?",
-      };
+      const aiMsg: Message = { role: 'model', es: data.es || "¡Hola! ¿Cómo estás?", it: data.it || "Ciao! Come stai?" };
       setMessages(prev => [...prev, aiMsg]);
       setIsThinking(false);
       speakIt(aiMsg.es);
-
     } catch {
       if (retryCount === 0) {
         setStatus('Connessione lenta, riprovo...');
@@ -244,8 +227,7 @@ export default function App() {
       }
       setIsThinking(false);
       setStatus('Server sovraccarico · Servidor ocupado');
-      const errorMsg: Message = { role: 'error', es: '', it: '' };
-      setMessages(prev => [...prev, errorMsg]);
+      setMessages(prev => [...prev, { role: 'error', es: '', it: '' }]);
     }
   };
 
@@ -287,9 +269,7 @@ export default function App() {
           </p>
         </header>
 
-        {/* Mirror + Flanking Flags */}
         <div className="relative flex items-center justify-center mb-5">
-
           {showFlags && (
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
               className="flex flex-col items-center gap-1 mr-5 select-none">
@@ -340,7 +320,6 @@ export default function App() {
           )}
         </div>
 
-        {/* Settings */}
         <div className="grid grid-cols-2 gap-2 mb-4">
           <div className="space-y-1">
             <label className="text-[0.55rem] uppercase tracking-widest text-[#c0392b]/50 ml-1 flex items-center gap-1"><Settings size={8} /> Livello · Nivel</label>
@@ -367,7 +346,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Action Row */}
         <div className="flex items-center justify-center gap-6 mb-2">
           <div className="flex flex-col items-center gap-1">
             <button type="button" onClick={() => messages.length > 0 && speakIt(messages[messages.length-1].es)}
@@ -400,62 +378,31 @@ export default function App() {
           <p className="text-[0.65rem] text-[#e87a6a]/60 min-h-[1em] italic font-medium">{status}</p>
         </div>
 
-        {/* Chat */}
-        <div className="w-full h-[35vh] min-h-[250px] bg-black/30 border border-[#c0392b]/10 rounded-xl overflow-y-auto p-3 space-y-3 scrollbar-thin mb-4">
-
+        {/* ✅ scrollbar-thin verwijderd — vervangen door overflow-y-auto */}
+        <div className="w-full h-[35vh] min-h-[250px] bg-black/30 border border-[#c0392b]/10 rounded-xl overflow-y-auto p-3 space-y-3 mb-4">
           {messages.map((msg, i) => {
-
             if (msg.role === 'error') {
               return (
                 <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   className="flex flex-col items-start">
                   <div className="w-full px-3 py-3 rounded-xl rounded-bl-none text-[0.72rem] leading-relaxed bg-amber-900/20 border border-amber-500/30 space-y-2">
-
-                    <p className="text-amber-300 font-semibold text-[0.75rem]">
-                      ⚠️ El espejo está momentáneamente saturado
-                    </p>
-
-                    <p className="text-amber-200/70">
-                      🕐 El servidor gratuito está más ocupado durante el día y a última hora de la noche
-                      (cuando los gamers americanos están en línea). Los mejores momentos para practicar:
-                      temprano por la mañana o entre las 13:00 y las 15:00.
-                    </p>
-
-                    <p className="text-amber-200/70">
-                      🎤 ¡No hay problema! Pulsa el micrófono para leer una frase en voz alta
-                      y el altavoz 🔊 para escucharla de nuevo.
-                      ¡Puedes practicar igual mientras esperas!
-                    </p>
-
-                    <p className="text-amber-200/50 text-[0.65rem] italic">
-                      🇮🇹 Nessun problema! Clicca sul microfono per leggere una frase
-                      ad alta voce e sull'altoparlante per riascoltarla. Puoi esercitarti lo stesso!
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMessages(prev => prev.filter((_, idx) => idx !== i));
-                        generateAIResponse(messages.filter(m => m.role !== 'error'));
-                      }}
-                      className="mt-1 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[0.6rem] uppercase tracking-widest hover:bg-amber-500/30 transition-colors"
-                    >
+                    <p className="text-amber-300 font-semibold text-[0.75rem]">⚠️ El espejo está momentáneamente saturado</p>
+                    <p className="text-amber-200/70">🕐 El servidor gratuito está más ocupado durante el día y a última hora de la noche (cuando los gamers americanos están en línea). Los mejores momentos para practicar: temprano por la mañana o entre las 13:00 y las 15:00.</p>
+                    <p className="text-amber-200/70">🎤 ¡No hay problema! Pulsa el micrófono para leer una frase en voz alta y el altavoz 🔊 para escucharla. ¡Puedes practicar igual mientras esperas!</p>
+                    <p className="text-amber-200/50 text-[0.65rem] italic">🇮🇹 Nessun problema! Clicca sul microfono per leggere una frase e sull'altoparlante per riascoltarla. Puoi esercitarti lo stesso!</p>
+                    <button type="button"
+                      onClick={() => { setMessages(prev => prev.filter((_, idx) => idx !== i)); generateAIResponse(messages.filter(m => m.role !== 'error')); }}
+                      className="mt-1 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[0.6rem] uppercase tracking-widest hover:bg-amber-500/30 transition-colors">
                       ↻ Intentar de nuevo · Riprova
                     </button>
-
                   </div>
                 </motion.div>
               );
             }
-
             return (
               <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                <div className={`max-w-[90%] px-3 py-2 rounded-xl text-[0.8rem] leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-white/5 border border-white/10 rounded-br-none italic text-white/80'
-                    : 'bg-gradient-to-br from-[#c0392b]/10 to-[#c0392b]/5 border border-[#c0392b]/20 rounded-bl-none'
-                }`}>
+                <div className={`max-w-[90%] px-3 py-2 rounded-xl text-[0.8rem] leading-relaxed ${msg.role === 'user' ? 'bg-white/5 border border-white/10 rounded-br-none italic text-white/80' : 'bg-gradient-to-br from-[#c0392b]/10 to-[#c0392b]/5 border border-[#c0392b]/20 rounded-bl-none'}`}>
                   {msg.role === 'model' ? (
                     <>
                       <span className="font-serif italic text-base text-[#e87a6a] block mb-0.5">{msg.es}</span>
@@ -465,11 +412,7 @@ export default function App() {
                     <>
                       <span>{msg.es}</span>
                       {msg.score !== undefined && (
-                        <div className={`mt-1.5 text-[0.55rem] font-bold uppercase px-1.5 py-0.5 rounded-sm inline-block ${
-                          msg.score === 2 ? 'bg-green-500/10 text-green-400'
-                          : msg.score === 1 ? 'bg-yellow-500/10 text-yellow-400'
-                          : 'bg-red-500/10 text-red-400'
-                        }`}>
+                        <div className={`mt-1.5 text-[0.55rem] font-bold uppercase px-1.5 py-0.5 rounded-sm inline-block ${msg.score === 2 ? 'bg-green-500/10 text-green-400' : msg.score === 1 ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400'}`}>
                           {msg.score === 2 ? '✓ ¡Muy bien!' : msg.score === 1 ? '~ ¡Casi!' : '↻ Inténtalo de nuevo'}
                         </div>
                       )}
@@ -479,7 +422,6 @@ export default function App() {
               </motion.div>
             );
           })}
-
           {isThinking && (
             <div className="flex gap-1.5 p-2 bg-[#c0392b]/5 border border-[#c0392b]/10 rounded-xl rounded-bl-none w-12">
               <div className="w-1 h-1 bg-[#e87a6a] rounded-full animate-bounce" />
@@ -490,19 +432,16 @@ export default function App() {
           <div ref={chatEndRef} />
         </div>
 
-        {/* Bottom */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between border-b border-[#c0392b]/10 pb-3">
             <div className="flex items-center gap-1.5 text-[#c0392b]/60 text-[0.6rem] uppercase tracking-widest"><Trophy size={12} /> Punteggio · Puntuación</div>
             <div className="text-[#e87a6a] font-bold text-lg">⭐ {score}</div>
           </div>
-
           <button type="button" onClick={startNewConversation}
             className="w-full py-3 border border-[#c0392b]/30 bg-[#c0392b]/5 rounded-xl text-[0.7rem] tracking-[0.2em] uppercase text-[#e87a6a] hover:bg-[#c0392b]/10 flex flex-col items-center justify-center gap-1">
             <div className="flex items-center gap-2"><RotateCcw size={14} /> Nuova Conversazione</div>
             <span className="text-[0.55rem] opacity-60">Nueva conversación</span>
           </button>
-
           <div className="flex gap-2">
             <button type="button" onClick={downloadTranscript}
               className="flex-1 py-2 border border-[#c0392b]/10 rounded-lg text-[0.6rem] tracking-widest uppercase text-[#c0392b]/60 hover:text-[#e87a6a] flex flex-col items-center gap-0.5">
@@ -534,15 +473,8 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
-      <GuidaSection accentColor="#c0392b" />
-      <div style={{
-        textAlign: 'center',
-        padding: '1.5rem 1rem 2rem',
-        fontSize: '0.72rem',
-        lineHeight: 1.8,
-        color: 'white',
-        opacity: 0.85,
-      }}>
+
+      <div style={{ textAlign: 'center', padding: '1.5rem 1rem 2rem', fontSize: '0.72rem', lineHeight: 1.8, color: 'white', opacity: 0.85 }}>
         🇮🇹 Questa app è gratuita. Se la usi spesso, ti consigliamo di creare la tua chiave API personale — è facile e gratuita su aistudio.google.com.<br /><br />
         🇳🇱 Deze app is gratis. Gebruik je hem regelmatig, maak dan je eigen API-sleutel aan — eenvoudig en gratis via aistudio.google.com.<br /><br />
         🇬🇧 This app is free to use. If you use it regularly, we recommend creating your own API key — quick and free at aistudio.google.com.
