@@ -5,15 +5,11 @@
 import { GuidaSection } from './GuidaInstructions';
 import { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, Modality } from "@google/genai";
-import { 
-  Mic, MicOff, Volume2, Sparkles, Camera, CameraOff, ChevronRight, 
-  RotateCcw, Settings, MessageSquare, Trophy, Save, Key
-} from 'lucide-react';
+import { Mic, MicOff, Volume2, Sparkles, Camera, CameraOff, ChevronRight, RotateCcw, Settings, MessageSquare, Trophy, Save, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-// 'error' voor de foutbubbel in het gespreksveld
 interface Message {
   role: 'user' | 'model' | 'error';
   es: string;
@@ -22,6 +18,7 @@ interface Message {
   heard?: string;
 }
 
+// ✅ Prompt als constante ZONDER ${level} en ${topic} — die komen in generateAIResponse
 const SYSTEM_PROMPT = `Sei Carmen, una simpatica partner di conversazione in spagnolo — come uno specchio magico che parla.
 REGOLE: UNA frase breve in spagnolo per turno (max 12 parole). Termina sempre con una domanda. Usa spagnolo naturale e moderno. Parla in modo caldo e incoraggiante. Correggi gli errori gentilmente con ✏️
 Rispondi SOLO con JSON valido, senza spiegazioni o Markdown: {"es":"frase in spagnolo","it":"traduzione italiana"}`;
@@ -71,7 +68,6 @@ export default function App() {
     prevMessagesLength.current = messages.length;
   }, [messages.length, isThinking]);
 
-  // Safari-fix: AudioContext initialiseren of hervatten tijdens een klik
   const ensureAudioContext = () => {
     if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
       audioContextRef.current.resume();
@@ -106,7 +102,6 @@ export default function App() {
     }
   };
 
-  // Spaanse stem (Aoede) — geen instructietekst, alleen de tekst zelf
   const speakIt = async (text: string) => {
     if (!text) return;
     setIsSpeaking(true);
@@ -153,7 +148,6 @@ export default function App() {
     }
   };
 
-  // Safari-fix: ensureAudioContext bij de microfoonklik
   const startRecording = () => {
     ensureAudioContext();
     try {
@@ -197,7 +191,7 @@ export default function App() {
     return 0.5;
   };
 
-  // Timeout + automatische retry + foutbubbel
+  // ✅ Zelfde patroon als Nederlands: SYSTEM_PROMPT + niveau/onderwerp in generateAIResponse
   const generateAIResponse = async (history: Message[], retryCount = 0) => {
     setIsThinking(true);
     setStatus(retryCount > 0
@@ -255,7 +249,6 @@ export default function App() {
     }
   };
 
-  // Safari-fix: ensureAudioContext ook bij Nuova Conversazione
   const startNewConversation = () => {
     ensureAudioContext();
     setMessages([]);
@@ -275,7 +268,6 @@ export default function App() {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
-  // Spaanse accentkleur: warm rood #c0392b / #e74c3c
   return (
     <div className="min-h-screen w-full bg-[#080810] text-[#f5f0e8] font-sans selection:bg-[#c0392b]/30 flex flex-col pb-8">
       <div className="flex flex-col max-w-md mx-auto w-full px-4 pt-4 relative z-10">
@@ -413,7 +405,6 @@ export default function App() {
 
           {messages.map((msg, i) => {
 
-            // Tweetalige foutbubbel (Spaans + Italiaans)
             if (msg.role === 'error') {
               return (
                 <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -438,8 +429,7 @@ export default function App() {
 
                     <p className="text-amber-200/50 text-[0.65rem] italic">
                       🇮🇹 Nessun problema! Clicca sul microfono per leggere una frase
-                      ad alta voce e sull'altoparlante per riascoltarla.
-                      Puoi esercitarti lo stesso!
+                      ad alta voce e sull'altoparlante per riascoltarla. Puoi esercitarti lo stesso!
                     </p>
 
                     <button
